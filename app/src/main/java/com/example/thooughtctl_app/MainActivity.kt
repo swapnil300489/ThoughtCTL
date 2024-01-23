@@ -3,6 +3,7 @@ package com.example.thooughtctl_app
 import android.app.ProgressDialog
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
@@ -25,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: GalleryAdapter
     private lateinit var searchCountText: TextView
     private lateinit var convertViewText: TextView
+    private lateinit var id_no_data_tv: TextView
     private lateinit var layoutManager: RecyclerView.LayoutManager
     private var FLAG : Boolean = true
     var pd : ProgressDialog? = null
@@ -43,6 +45,8 @@ class MainActivity : AppCompatActivity() {
             override fun onQueryTextChange(newText: String?): Boolean {
                 if (!newText.isNullOrBlank() && newText.length >= 3) {
                     performSearch(newText)
+                }else if(newText.equals("")){
+                    featchData()
                 }
                 return true
             }
@@ -73,19 +77,42 @@ class MainActivity : AppCompatActivity() {
         call.enqueue(object : Callback<ImgurResponse> {
             override fun onResponse(call: Call<ImgurResponse>, response: Response<ImgurResponse>) {
                 pd?.dismiss()
-                if (response.isSuccessful) {
+                if (response.code() == 200) {
                     Log.e("Retrofit_Query_Response", response.message())
-                    searchCountText.text = "Search Result found: "+response.body()!!.data.size
-                    adapter = GalleryAdapter(applicationContext, response.body()!!.data)
-                    recyclerView.adapter = adapter
+
+
+                    if (response.body()!!.data.size != 0){
+                        searchCountText.visibility = View.VISIBLE
+                        convertViewText.visibility = View.VISIBLE
+                        recyclerView.visibility = View.VISIBLE
+                        id_no_data_tv.visibility = View.GONE
+                        searchCountText.text = "Search Result found: "+response.body()!!.data.size
+                        adapter = GalleryAdapter(applicationContext, response.body()!!.data)
+                        recyclerView.adapter = adapter
+                    }else{
+                        searchCountText.text = "Search Result found: "+0
+                        recyclerView.visibility = View.GONE
+                        id_no_data_tv.visibility = View.VISIBLE
+                        id_no_data_tv.text = "Records not found..."
+                    }
 
                 } else {
+                    searchCountText.visibility = View.GONE
+                    recyclerView.visibility = View.GONE
+                    convertViewText.visibility = View.GONE
+                    id_no_data_tv.visibility = View.VISIBLE
+                    id_no_data_tv.text = "Records not found..."
                     Log.e("Retrofit__Query_ResponseError", response.message())
                 }
             }
 
             override fun onFailure(call: Call<ImgurResponse>, t: Throwable) {
                 pd?.dismiss()
+                searchCountText.visibility = View.GONE
+                convertViewText.visibility = View.GONE
+                recyclerView.visibility = View.GONE
+                id_no_data_tv.visibility = View.VISIBLE
+                id_no_data_tv.text = "Records not found..."
                 Log.e("Retrofit__Query_Failure>>", "Something went wrong>>"+t.message)
             }
         })
@@ -95,9 +122,14 @@ class MainActivity : AppCompatActivity() {
         SearchView = findViewById(R.id.searchView)
         recyclerView = findViewById(R.id.recyclerView)
         searchCountText = findViewById(R.id.searchResultsTextView)
+        id_no_data_tv = findViewById(R.id.id_no_data_tv)
         convertViewText = findViewById(R.id.id_convert_layout_txt)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        featchData()
+    }
+
+    private fun featchData() {
         val authorizationHeader = "Client-ID $clientId"
         val call = RetrofitClient.apiService.getHotViralImages(authorizationHeader)
 
@@ -109,24 +141,48 @@ class MainActivity : AppCompatActivity() {
         call.enqueue(object : Callback<ImgurResponse> {
             override fun onResponse(call: Call<ImgurResponse>, response: Response<ImgurResponse>) {
                 pd?.dismiss()
-                if (response.isSuccessful) {
+                if (response.code() == 200) {
                     val imgurResponse = response.body()
                     // Process the imgurResponse data
                     Log.e("Retrofit_Response", response.message())
-                    searchCountText.text = "Result found: "+response.body()!!.data.size
-                    adapter = GalleryAdapter(applicationContext, response.body()!!.data)
-                    recyclerView.adapter = adapter
+
+
+                    if (response.body()!!.data.size != 0){
+                        searchCountText.visibility = View.VISIBLE
+                        convertViewText.visibility = View.VISIBLE
+                        recyclerView.visibility = View.VISIBLE
+                        id_no_data_tv.visibility = View.GONE
+                        searchCountText.text = "Result found: "+response.body()!!.data.size
+                        id_no_data_tv.visibility = View.GONE
+                        adapter = GalleryAdapter(applicationContext, response.body()!!.data)
+                        recyclerView.adapter = adapter
+                    }else{
+                        searchCountText.visibility = View.GONE
+                        recyclerView.visibility = View.GONE
+                        id_no_data_tv.visibility = View.VISIBLE
+                        id_no_data_tv.text = "Records not found..."
+                    }
+
+
 
                 } else {
+                    searchCountText.visibility = View.GONE
+                    convertViewText.visibility = View.GONE
+                    recyclerView.visibility = View.GONE
+                    id_no_data_tv.visibility = View.VISIBLE
+                    id_no_data_tv.text = "Records not found..."
                     Log.e("Retrofit_ResponseError", response.message())
                 }
             }
 
             override fun onFailure(call: Call<ImgurResponse>, t: Throwable) {
                 pd?.dismiss()
+                recyclerView.visibility = View.GONE
+                convertViewText.visibility = View.GONE
+                id_no_data_tv.visibility = View.VISIBLE
+                id_no_data_tv.text = "Records not found..."
                 Log.e("Retrofit_Failure>>", "Something went wrong>>"+t.message)
             }
         })
-
     }
 }
